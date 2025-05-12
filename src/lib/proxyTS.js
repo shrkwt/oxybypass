@@ -23,6 +23,7 @@ export async function proxyTs(url, headers, req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader("Access-Control-Allow-Methods", "*");
+  res.setHeader("Content-Disposition", 'inline; filename="segmentResponse.ts"');
 
   try {
     if (forceHTTPS) {

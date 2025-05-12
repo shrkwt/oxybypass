@@ -31,7 +31,7 @@ export default async function proxyM3U8(url, headers, res) {
         if (line.startsWith("#EXT-X-KEY:")) {
           const regex = /https?:\/\/[^\""\s]+/g;
           const url = `${web_server_url}${
-            "/ts-proxy?url=" +
+            "/seg?url=" +
             encodeURIComponent(regex.exec(line)?.[0] ?? "") +
             "&headers=" +
             encodeURIComponent(JSON.stringify(headers))
@@ -40,7 +40,7 @@ export default async function proxyM3U8(url, headers, res) {
         } else if (line.startsWith("#EXT-X-MEDIA:TYPE=AUDIO")) {
           const regex = /https?:\/\/[^\""\s]+/g;
           const url = `${web_server_url}${
-            "/m3u8-proxy?url=" +
+            "/hls-proxy?url=" +
             encodeURIComponent(regex.exec(line)?.[0] ?? "") +
             "&headers=" +
             encodeURIComponent(JSON.stringify(headers))
@@ -54,7 +54,7 @@ export default async function proxyM3U8(url, headers, res) {
         newLines.push(
           `${
             web_server_url +
-            "/m3u8-proxy?url=" +
+            "/hls-proxy?url=" +
             encodeURIComponent(uri.href) +
             "&headers=" +
             encodeURIComponent(JSON.stringify(headers))
@@ -86,6 +86,7 @@ export default async function proxyM3U8(url, headers, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "*");
     res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Content-Disposition", 'inline; filename="streamResponse.hls"');
 
     res.end(newLines.join("\n"));
     return;
@@ -97,7 +98,7 @@ export default async function proxyM3U8(url, headers, res) {
         if (line.startsWith("#EXT-X-KEY:")) {
           const regex = /https?:\/\/[^\""\s]+/g;
           const url = `${web_server_url}${
-            "/ts-proxy?url=" +
+            "/seg?url=" +
             encodeURIComponent(regex.exec(line)?.[0] ?? "") +
             "&headers=" +
             encodeURIComponent(JSON.stringify(headers))
@@ -111,7 +112,7 @@ export default async function proxyM3U8(url, headers, res) {
 
         newLines.push(
           `${web_server_url}${
-            "/ts-proxy?url=" +
+            "/seg?url=" +
             encodeURIComponent(uri.href) +
             "&headers=" +
             encodeURIComponent(JSON.stringify(headers))
@@ -143,6 +144,7 @@ export default async function proxyM3U8(url, headers, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "*");
     res.setHeader("Access-Control-Allow-Methods", "*");
+    res.setHeader("Content-Disposition", 'inline; filename="stream.hls"');
 
     res.end(newLines.join("\n"));
     return;

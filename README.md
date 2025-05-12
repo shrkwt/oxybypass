@@ -1,6 +1,6 @@
-# M3U8 Proxy Server
+# Oxybypass: Hls Proxy Server
 
-Welcome to the M3U8 Proxy Server! Tired of dealing with those pesky CORS errors when trying to stream your M3U8 files? Fear not, because our proxy server is here to save the day!
+Welcome to the Hls Proxy Server! Tired of dealing with those pesky CORS errors when trying to stream your M3U8 files? Fear not, because our proxy server is here to save the day!
 
 ## 🎯 What This Project Does
 
@@ -10,12 +10,12 @@ This Node.js application acts as a middleman between your requests and the M3U8 
 
 ### Vercel
 
-Host your own instance of M3U8-Proxy on vercel
+Host your own instance of Hls-Proxy on vercel
 
 [![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/itzzzme/m3u8proxy)
 ### Render
 
-Host your own instance of M3U8-Proxy on Render.
+Host your own instance of Hls-Proxy on Render.
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/itzzzme/m3u8proxy)
 
@@ -45,11 +45,11 @@ More info can be found in [`.env.example`](https://github.com/itzzzme/m3u8proxy/
 
 If you want to use the proxy directly, append your M3U8 link to the following URL:
 
-[https://<deployed_web_server>/m3u8-proxy?url={url}](https://<deployed_web_server>/m3u8-proxy?url={url})
+[https://<deployed_web_server>/hls-proxy?url={url}](https://<deployed_web_server>/hls-proxy?url={url})
 
 For example, if your M3U8 link is `https://example.com/stream.m3u8`, you would use:
 
-[https://<deployed_web_server>/m3u8-proxy?url=https://example.com/stream.m3u8](https://<deployed_web_server>/m3u8-proxy?url=https://example.com/stream.m3u8)
+[https://<deployed_web_server>/hls-proxy?url=https://example.com/stream.m3u8](https://<deployed_web_server>/hls-proxy?url=https://example.com/stream.m3u8)
 
 ## 🎥 Video Demo
 
@@ -69,7 +69,7 @@ Here’s how you can use Video.js to play the proxied URL:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proxied M3U8 Player</title>
+    <title>Proxied Hls Stream</title>
     <link href="https://vjs.zencdn.net/7.21.0/video-js.css" rel="stylesheet">
 </head>
 <body>
@@ -103,6 +103,6 @@ Feel free to open issues or pull requests if you have suggestions or improvement
 
 <br/>
 
-<p align="center" style="text-decoration: none;">Made by <a href="https://github.com/itzzzme" target="_blank">itzzzme 
+<p align="center" style="text-decoration: none;">Based on <a href="https://github.com/itzzzme/m3u8proxy" target="_blank">m3u8-proxy 
 </a>🫰</p>
 
