@@ -18,8 +18,9 @@ export async function proxyTs(url, headers, req, res) {
     path: uri.pathname + uri.search,
     method: req.method,
     headers: {
+      "Referer": "https://www.youtube.com/",
       "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
       ...headers,
     },
   };
