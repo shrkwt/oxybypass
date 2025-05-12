@@ -1,5 +1,6 @@
 import axios from "axios";
 import dotenv from "dotenv";
+import path from "node:path";
 
 dotenv.config();
 
@@ -8,6 +9,12 @@ const port = process.env.PORT || 8080;
 const web_server_url = process.env.PUBLIC_URL || `http://${host}:${port}`;
 
 export default async function proxyM3U8(url, headers, res) {
+  // 0) Determine a filename for this manifest
+  let manifestName = path.basename(new URL(url).pathname) || "streamResponse.hls";
+  if (!manifestName.endsWith(".m3u8")) {
+    manifestName = "streamResponse.hls";
+  }
+
   // 1) Fetch original playlist
   const resp = await axios(url, { headers }).catch((err) => {
     res.writeHead(500);
@@ -26,8 +33,15 @@ export default async function proxyM3U8(url, headers, res) {
   const lines = resp.data.split("\n");
   const out = [];
   let pendingVariant = false;
+  const isMaster = resp.data.includes("RESOLUTION=");
 
   for (let line of lines) {
+    // ** STOP as soon as we hit the end-of-list tag **
+    if (line.trim() === "#EXT-X-ENDLIST") {
+      out.push(line);
+      break;
+    }
+
     // --- Decryption key URLs (master or media) ---
     if (line.startsWith("#EXT-X-KEY:")) {
       const regex = /https?:\/\/[^\s"]+/g;
@@ -47,7 +61,7 @@ export default async function proxyM3U8(url, headers, res) {
       out.push(line.replace(regex, proxied));
 
     // --- Master variant header: next non-blank line is a .m3u8 URI ---
-    } else if (line.startsWith("#EXT-X-STREAM-INF")) {
+    } else if (isMaster && line.startsWith("#EXT-X-STREAM-INF")) {
       out.push(line);
       pendingVariant = true;
 
@@ -55,15 +69,15 @@ export default async function proxyM3U8(url, headers, res) {
     } else if (pendingVariant && line.trim() !== "") {
       pendingVariant = false;
       const uri = new URL(line, url);
-      // nested playlist (.m3u8)?
       if (uri.pathname.endsWith(".m3u8")) {
+        // nested master/media playlist
         out.push(
           `${web_server_url}/hls-proxy?url=${encodeURIComponent(
             uri.href
           )}${headersParam}`
         );
       } else {
-        // (rare) case: master listing .ts directly
+        // rare case: master listing .ts directly
         out.push(
           `${web_server_url}/seg?url=${encodeURIComponent(
             uri.href
@@ -72,7 +86,7 @@ export default async function proxyM3U8(url, headers, res) {
       }
 
     // --- Media‐playlist segment lines (no RESOLUTION=) ---
-    } else if (!line.startsWith("#") && !resp.data.includes("RESOLUTION=")) {
+    } else if (!isMaster && line.trim() !== "" && !line.startsWith("#")) {
       // in a media playlist every non-# line is a .ts segment
       const uri = new URL(line, url);
       out.push(
@@ -112,6 +126,10 @@ export default async function proxyM3U8(url, headers, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader("Access-Control-Allow-Methods", "*");
-  res.setHeader("Content-Disposition", 'inline; filename="streamResponse.hls"');
+  // Use the derived manifestName
+  res.setHeader(
+    "Content-Disposition",
+    `inline; filename="${manifestName}"`
+  );
   res.end(out.join("\n"));
 }
