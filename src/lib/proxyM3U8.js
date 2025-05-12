@@ -8,59 +8,86 @@ const port = process.env.PORT || 8080;
 const web_server_url = process.env.PUBLIC_URL || `http://${host}:${port}`;
 
 export default async function proxyM3U8(url, headers, res) {
-  // Fetch the original playlist
-  const req = await axios(url, { headers }).catch((err) => {
+  // 1) Fetch original playlist
+  const resp = await axios(url, { headers }).catch((err) => {
     res.writeHead(500);
     res.end(err.message);
     return null;
   });
-  if (!req) return;
+  if (!resp) return;
 
-  // Prepare the header‐param only if we actually have headers
-  const hasCustomHeaders = Object.keys(headers).length > 0;
-  const headersParam = hasCustomHeaders
-    ? "&headers=" + encodeURIComponent(JSON.stringify(headers))
-    : "";
+  // 2) Prepare optional headers param
+  const headersParam =
+    Object.keys(headers).length > 0
+      ? "&headers=" + encodeURIComponent(JSON.stringify(headers))
+      : "";
 
-  // Split into lines
-  const lines = req.data.split("\n");
-  const newLines = [];
+  // 3) Split into lines and set up state
+  const lines = resp.data.split("\n");
+  const out = [];
   let pendingVariant = false;
 
   for (let line of lines) {
-    // 1) Rewrite decryption keys
+    // --- Decryption key URLs (master or media) ---
     if (line.startsWith("#EXT-X-KEY:")) {
       const regex = /https?:\/\/[^\s"]+/g;
       const match = regex.exec(line)?.[0] || "";
-      const proxied = `${web_server_url}/seg?url=${encodeURIComponent(match)}${headersParam}`;
-      newLines.push(line.replace(regex, proxied));
+      const proxied = `${web_server_url}/seg?url=${encodeURIComponent(
+        match
+      )}${headersParam}`;
+      out.push(line.replace(regex, proxied));
 
-    // 2) Rewrite AUDIO entries
+    // --- Audio‐media playlists in master ---
     } else if (line.startsWith("#EXT-X-MEDIA:TYPE=AUDIO")) {
       const regex = /https?:\/\/[^\s"]+/g;
       const match = regex.exec(line)?.[0] || "";
-      const proxied = `${web_server_url}/hls-proxy?url=${encodeURIComponent(match)}${headersParam}`;
-      newLines.push(line.replace(regex, proxied));
+      const proxied = `${web_server_url}/hls-proxy?url=${encodeURIComponent(
+        match
+      )}${headersParam}`;
+      out.push(line.replace(regex, proxied));
 
-    // 3) On a variant header, emit it and mark the next URI for rewriting
+    // --- Master variant header: next non-blank line is a .m3u8 URI ---
     } else if (line.startsWith("#EXT-X-STREAM-INF")) {
-      newLines.push(line);
+      out.push(line);
       pendingVariant = true;
 
-    // 4) The very next non-blank line after a variant header is the URI itself
+    // --- Rewrite the very next URI after a variant header ---
     } else if (pendingVariant && line.trim() !== "") {
       pendingVariant = false;
-      // Resolve relative URIs against the master playlist URL
       const uri = new URL(line, url);
-      newLines.push(`${web_server_url}/hls-proxy?url=${encodeURIComponent(uri.href)}${headersParam}`);
+      // nested playlist (.m3u8)?
+      if (uri.pathname.endsWith(".m3u8")) {
+        out.push(
+          `${web_server_url}/hls-proxy?url=${encodeURIComponent(
+            uri.href
+          )}${headersParam}`
+        );
+      } else {
+        // (rare) case: master listing .ts directly
+        out.push(
+          `${web_server_url}/seg?url=${encodeURIComponent(
+            uri.href
+          )}${headersParam}`
+        );
+      }
 
-    // 5) Everything else (comments, blank lines, etc.) passes through
+    // --- Media‐playlist segment lines (no RESOLUTION=) ---
+    } else if (!line.startsWith("#") && !resp.data.includes("RESOLUTION=")) {
+      // in a media playlist every non-# line is a .ts segment
+      const uri = new URL(line, url);
+      out.push(
+        `${web_server_url}/seg?url=${encodeURIComponent(
+          uri.href
+        )}${headersParam}`
+      );
+
+    // --- All other lines pass through unchanged ---
     } else {
-      newLines.push(line);
+      out.push(line);
     }
   }
 
-  // Clean out any unwanted upstream headers
+  // 4) Clean upstream headers
   [
     "Access-Control-Allow-Origin",
     "Access-Control-Allow-Methods",
@@ -80,13 +107,11 @@ export default async function proxyM3U8(url, headers, res) {
     "x-amz-cf-id",
   ].forEach((h) => res.removeHeader(h));
 
-  // Set correct response headers
+  // 5) Send it back as an HLS master or media playlist
   res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader("Access-Control-Allow-Methods", "*");
   res.setHeader("Content-Disposition", 'inline; filename="streamResponse.hls"');
-
-  // Send the rewritten playlist
-  res.end(newLines.join("\n"));
+  res.end(out.join("\n"));
 }
