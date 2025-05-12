@@ -22,7 +22,7 @@ Host your own instance of Hls-Proxy on Render.
 ### Cloudflare-worker
  - Create an example starter worker in your cloudflare account
  - Edit the code of the worker after deploying it
- - Override the code of your starter worker with the code given in `m3u8proxy(cf_worker).js`
+ - Override the code of your starter worker with the code given in `hls-proxy(cf_worker).js`
  - Deploy your worker
 
 ## 🚀 How It Works
