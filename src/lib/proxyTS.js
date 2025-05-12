@@ -1,13 +1,16 @@
 import https from "node:https";
 import http from "node:http";
+import path from "node:path";
 
 export async function proxyTs(url, headers, req, res) {
-  let forceHTTPS = false;
-
-  if (url.startsWith("https://")) {
-    forceHTTPS = true;
+  // 0) Derive a filename for this .ts segment
+  let tsName = path.basename(new URL(url).pathname) || "segmentResponse.ts";
+  if (!tsName.endsWith(".ts")) {
+    tsName = "segmentResponse.ts";
   }
 
+  // 1) Determine protocol
+  const forceHTTPS = url.startsWith("https://");
   const uri = new URL(url);
   const options = {
     hostname: uri.hostname,
@@ -20,38 +23,25 @@ export async function proxyTs(url, headers, req, res) {
       ...headers,
     },
   };
+
+  // 2) CORS & disposition
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader("Access-Control-Allow-Methods", "*");
-  res.setHeader("Content-Disposition", 'inline; filename="segmentResponse.ts"');
+  res.setHeader("Content-Disposition", `inline; filename="${tsName}"`);
 
   try {
-    if (forceHTTPS) {
-      const proxy = https.request(options, (r) => {
-        r.headers["content-type"] = "video/mp2t";
-        res.writeHead(r.statusCode ?? 200, r.headers);
-
-        r.pipe(res, {
-          end: true,
-        });
-      });
-
-      req.pipe(proxy, {
-        end: true,
-      });
-    } else {
-      const proxy = http.request(options, (r) => {
-        r.headers["content-type"] = "video/mp2t";
-        res.writeHead(r.statusCode ?? 200, r.headers);
-
-        r.pipe(res, {
-          end: true,
-        });
-      });
-      req.pipe(proxy, {
-        end: true,
-      });
-    }
+    const proxyLib = forceHTTPS ? https : http;
+    const proxyReq = proxyLib.request(options, (r) => {
+      // force the right content type
+      r.headers["content-type"] = "video/mp2t";
+      // mirror status & headers
+      res.writeHead(r.statusCode ?? 200, r.headers);
+      // pipe the bytes
+      r.pipe(res, { end: true });
+    });
+    // pipe client request to upstream
+    req.pipe(proxyReq, { end: true });
   } catch (e) {
     res.writeHead(500);
     res.end(e.message);
