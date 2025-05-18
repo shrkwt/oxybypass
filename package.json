@@ -1,7 +1,7 @@
 {
-  "name": "m3u8proxy",
+  "name": "oxycors",
   "version": "1.0.0",
-  "description": "",
+  "description": "Efficient HLS cors proxy server running over Node.js for seamless video streaming without cross-origin restrictions.",
   "devDependencies": {
     "@types/node": "^18.11.13",
     "@typescript-eslint/eslint-plugin": "^5.59.2",
