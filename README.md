@@ -43,7 +43,7 @@ More info can be found in [`.env.example`](https://github.com/oxycors/oxycors/bl
 - `HOST`: host of your oxycors proxy server `optional`
 - `PORT`: port number (any) `optional`
 - `PUBLIC_URL`: public url of your oxycors deployment `mandatory`
-- `ALLOWED_ORIGINS`: origins to allow the  usage of oxycors deployment `mandatory`
+- `ALLOWED_ORIGINS`: origins to allow the  usage of oxycors deployment `mandatory` e.g. of value: `ALLOWED_ORIGINS=["","https://example1.app","https://example2.app"]` (include "" in the json array to make the homepage working)
 
 
 ## 📹 Example Code Snippet
